@@ -1,0 +1,119 @@
+﻿@page "/faculty-mycourses"
+@layout FacultyLayout
+
+@using EducationAssignmentPortal.Components.Layout
+@using EducationAssignmentPortal.Models
+@using EducationAssignmentPortal.Services
+@inject CourseService CourseService
+@inject UserService UserService
+@inject NavigationManager Navigation
+
+<h3>My Courses</h3>
+
+<hr />
+
+<h4>Add New Course</h4>
+
+<EditForm Model="@newCourse" OnValidSubmit="AddCourse">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="mb-2">
+        <label>Course Name:</label>
+        <InputText class="form-control"
+                   @bind-Value="newCourse.CourseName" />
+    </div>
+
+    <div class="mb-2">
+        <label>Course Code:</label>
+        <InputText class="form-control"
+                   @bind-Value="newCourse.CourseCode" />
+    </div>
+
+    <button type="submit" class="btn btn-success">
+        Add Course
+    </button>
+</EditForm>
+
+<hr />
+
+@if (courses.Count == 0)
+{
+    <p>No courses added yet.</p>
+}
+else
+{
+    <table class="table table-bordered">
+        <thead class="table-dark">
+            <tr>
+                <th>Course Name</th>
+                <th>Course Code</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var c in courses)
+            {
+                <tr>
+                    <td>@c.CourseName</td>
+                    <td>@c.CourseCode</td>
+                    <td>
+                        <button class="btn btn-danger btn-sm"
+                                @onclick="() => DeleteCourse(c.Id)">
+                            Delete
+                        </button>
+
+                        <button class="btn btn-primary btn-sm"
+                                @onclick="() => ViewAssignments(c.Id)">
+                            View Assignments
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+
+    private List<Course> courses = new();
+    private Course newCourse = new();
+
+    protected override void OnInitialized()
+    {
+        LoadCourses();
+    }
+
+    private void LoadCourses()
+    {
+        if (UserService.LoggedInUser != null)
+        {
+            courses = CourseService
+                .GetCoursesByFaculty(UserService.LoggedInUser.Id);
+        }
+    }
+
+    private void AddCourse()
+    {
+        if (UserService.LoggedInUser != null)
+        {
+            newCourse.FacultyId = UserService.LoggedInUser.Id;
+
+            CourseService.AddCourse(newCourse);
+
+            newCourse = new Course();   // reset form
+            LoadCourses();              // refresh list
+        }
+    }
+
+    private void DeleteCourse(int id)
+    {
+        CourseService.DeleteCourse(id);
+        LoadCourses();
+    }
+
+    private void ViewAssignments(int courseId)
+    {
+        Navigation.NavigateTo($"/faculty/course-assignments/{courseId}");
+    }
+}

@@ -1,0 +1,177 @@
+﻿
+@layout StudentLayout
+@page "/student-dashboard"
+@page "/student"
+
+@using EducationAssignmentPortal.Components.Layout
+@using EducationAssignmentPortal.Models
+@using EducationAssignmentPortal.Services
+@inject AssignmentService AssignmentService
+@inject UserService userService
+@inject NavigationManager Navigation
+
+<div class="container-fluid">
+
+    <!-- Welcome Card -->
+    <div class="dashboard-header shadow mb-4">
+        <h4>Welcome back, @userService.LoggedInUser?.Name!</h4>
+        <p>You have @Pending pending assignments to complete.</p>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card shadow text-center">
+                <div class="card-body">
+                    <h6>Total Assignments</h6>
+                    <h3>@Total</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card shadow text-center">
+                <div class="card-body">
+                    <h6>Submitted</h6>
+                    <h3>@Completed</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card shadow text-center">
+                <div class="card-body">
+                    <h6>Pending</h6>
+                    <h3>@Pending</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card shadow text-center">
+                <div class="card-body">
+                    <h6>Completion %</h6>
+                    <h3>@Percent%</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <!-- Completion Progress -->
+        <div class="col-md-6">
+            <div class="card shadow h-100">
+                <div class="card-body">
+                    <h5>Completion Progress</h5>
+                    <div class="progress mt-3" style="height:20px;">
+                        <div class="progress-bar bg-success" role="progressbar" style="width:@Percent%">
+                            @Percent%
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-between mt-2">
+                        <small>@Completed submitted</small>
+                        <small>@Pending remaining</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upcoming Deadlines -->
+        <div class="col-md-6">
+            <div class="card shadow h-100">
+                <div class="card-body">
+                    <h5>Upcoming Deadlines</h5>
+                    <p class="text-muted">Assignments due soon</p>
+                    <hr />
+                    @if (Upcoming.Count == 0)
+                    {
+                        <div class="text-center text-success mt-4">
+                            <h4>✔</h4>
+                            <p>No upcoming deadlines</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <ul class="list-group list-group-flush">
+                            @foreach (var item in Upcoming)
+                            {
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span>@item.Title</span>
+                                    <span class="text-danger">
+                                        @item.DueDate?.ToShortDateString()
+                                    </span>
+                                </li>
+                            }
+                        </ul>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <button class="btn btn-primary" @onclick="GoToAssignments">
+            View Assignments
+        </button>
+    </div>
+
+</div>
+
+@code {
+    private List<Assignment> assignments = new();
+
+    private int Total => assignments?.Count ?? 0;
+
+    private int Completed => 
+        assignments?.Count(a => a.Status == "Completed") ?? 0;
+
+    private int Pending => 
+        assignments?.Count(a => a.Status != "Completed") ?? 0;
+
+    private int Percent =>
+        Total == 0 ? 0 : (Completed * 100) / Total;
+
+    private List<Assignment> Upcoming =>
+        assignments?
+            .Where(a => a.Status != "Completed"
+                        && a.DueDate.HasValue
+                        && a.DueDate.Value >= DateTime.Today)
+            .OrderBy(a => a.DueDate)
+            .Take(5)
+            .ToList()
+        ?? new List<Assignment>();
+
+    // protected override async Task OnInitializedAsync()
+    // {
+    //     try
+    //     {
+    //         var email = userService.LoggedInUser?.Email;
+
+    //         if (!string.IsNullOrEmpty(email))
+    //         {
+    //             assignments = await AssignmentService.GetAllAssignments();
+    //         }
+    //     }
+    //     catch (Exception ex)
+    //     {
+    //         Console.WriteLine(ex.Message);
+    //     }
+    // }
+
+    protected override async Task OnInitializedAsync()
+{
+    try
+    {
+        assignments = await AssignmentService.GetAllAssignments();
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine(ex.Message);
+    }
+}
+
+    void GoToAssignments()
+    {
+        Navigation.NavigateTo("/student/assignments");
+    }
+}

@@ -1,0 +1,47 @@
+﻿@using EducationAssignmentPortal.Services
+@inject NavigationManager Navigation
+@inject UserService UserService
+@inherits LayoutComponentBase
+
+<div class="admin-container">
+
+    <!-- Sidebar -->
+    <div class="admin-sidebar">
+        <h4 class="admin-title">Admin Panel</h4>
+        <NotificationBell />
+
+        <nav class="admin-nav">
+            <NavLink href="/admin/courses" class="admin-link">
+                <i class="bi bi-mortarboard me-2"></i> Courses
+            </NavLink>
+
+            <NavLink href="/admin/reports" class="admin-link">
+                <i class="bi bi-graph-up me-2"></i> Reports
+            </NavLink>
+
+            <NavLink href="/admin/users" class="admin-link">
+                <i class="bi bi-people me-2"></i> Users
+            </NavLink>
+
+             <button class="btn btn-danger mt-3"
+			@onclick="Logout">
+        Logout
+    </button>
+        </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="admin-content">
+        @Body
+    </div>
+
+</div>
+
+@code {
+    void Logout()
+    {
+        UserService.Logout();
+        Navigation.NavigateTo("/login?logout=true"); // Redirect to login page after logout
+    }
+}
+

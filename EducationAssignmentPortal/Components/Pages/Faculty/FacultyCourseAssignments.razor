@@ -1,0 +1,162 @@
+﻿@* @page "/faculty/course-assignments/{CourseId:int}"
+@layout FacultyLayout
+
+@using EducationAssignmentPortal.Components.Layout
+@using EducationAssignmentPortal.Models
+@using EducationAssignmentPortal.Services
+@inject AssignmentService AssignmentService
+@inject NavigationManager Navigation
+
+<h3>Assignments for Course</h3>
+
+@if (assignments.Count == 0)
+{
+    <p>No assignments found for this course.</p>
+}
+else
+{
+    <table class="table table-bordered mt-3">
+        <thead class="table-dark">
+            <tr>
+                <th>Title</th>
+                <th>Description</th>
+                <th>Due Date</th>
+                <th>Status</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var a in assignments)
+            {
+                <tr>
+                    <td>@a.Title</td>
+                    <td>@a.Description</td>
+                    <td>@a.DueDate?.ToShortDateString()</td>
+                    <td>@a.Status</td>
+                    <td>
+                        <button class="btn btn-danger btn-sm"
+                                @onclick="() => DeleteAssignment(a.Id)">
+                            Delete
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+<button class="btn btn-secondary mt-3"
+        @onclick="GoBack">
+    Back to Courses
+</button>
+
+@code {
+
+    [Parameter]
+    public int CourseId { get; set; }
+
+    private List<Assignment> assignments = new();
+
+    protected override void OnInitialized()
+    {
+        assignments = AssignmentService.GetAssignmentsByCourse(CourseId);
+    }
+
+    private void DeleteAssignment(int id)
+    {
+        AssignmentService.DeleteAssignment(id);
+        assignments = AssignmentService.GetAssignmentsByCourse(CourseId);
+    }
+
+    private void GoBack()
+    {
+        Navigation.NavigateTo("/faculty-mycourses");
+    }
+} *@
+
+
+@page "/faculty/course-assignments/{CourseId:int}"
+@layout FacultyLayout
+
+@using EducationAssignmentPortal.Components.Layout
+@using EducationAssignmentPortal.Models
+@using EducationAssignmentPortal.Services
+@inject AssignmentService AssignmentService
+@inject NavigationManager Navigation
+
+<h3>Assignments for Course</h3>
+
+@if (assignments == null)
+{
+    <p>Loading assignments...</p>
+}
+else if (assignments.Count == 0)
+{
+    <p>No assignments found for this course.</p>
+}
+else
+{
+    <table class="table table-bordered mt-3">
+        <thead class="table-dark">
+            <tr>
+                <th>Title</th>
+                <th>Description</th>
+                <th>Due Date</th>
+                <th>Status</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var a in assignments)
+            {
+                <tr>
+                    <td>@a.Title</td>
+                    <td>@a.Description</td>
+                    <td>@a.DueDate?.ToShortDateString()</td>
+                    <td>@a.Status</td>
+                    <td>
+                        <button class="btn btn-danger btn-sm"
+                                @onclick="() => DeleteAssignment(a.Id)">
+                            Delete
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+<button class="btn btn-secondary mt-3"
+        @onclick="GoBack">
+    Back to Courses
+</button>
+
+@code {
+
+    [Parameter]
+    public int CourseId { get; set; }
+
+    private List<Assignment>? assignments;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAssignments();
+    }
+
+    private async Task LoadAssignments()
+    {
+        assignments = await AssignmentService
+            .GetAssignmentsByCourseAsync(CourseId);
+    }
+
+    private async Task DeleteAssignment(int id)
+    {
+        await AssignmentService.DeleteAssignmentAsync(id);
+        await LoadAssignments(); // Refresh after delete
+    }
+
+    private void GoBack()
+    {
+        Navigation.NavigateTo("/faculty-mycourses");
+    }
+}

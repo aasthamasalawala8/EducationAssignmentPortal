@@ -1,0 +1,70 @@
+﻿@using EducationAssignmentPortal.Services
+@using Microsoft.AspNetCore.Components.Authorization
+@using EducationAssignmentPortal.Models
+@inject NotificationService NotificationService
+@inject AuthenticationStateProvider AuthStateProvider
+
+<div class="notification-wrapper">
+    <span class="bell-icon" @onclick="ToggleNotifications">
+        🔔
+        @if (unreadCount > 0)
+        {
+            <span class="badge">@unreadCount</span>
+        }
+    </span>
+
+    @if (showNotifications)
+    {
+        <div class="notification-panel">
+            @if (notifications.Count == 0)
+            {
+                <div>No notifications</div>
+            }
+            else
+            {
+                @foreach (var n in notifications)
+                {
+                    <div class="notification-item @(n.IsRead ? "" : "unread")"
+                         @onclick="() => MarkAsRead(n.Id)">
+                        @n.Message
+                        <br />
+                        <small>@n.CreatedAt.ToString("dd MMM yyyy")</small>
+                    </div>
+                }
+            }
+        </div>
+    }
+</div>
+
+@code {
+
+    private bool showNotifications = false;
+    private List<Notification> notifications = new();
+    private int unreadCount = 0;
+    private string userEmail = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        userEmail = authState.User.Identity?.Name ?? "";
+
+        await LoadNotifications();
+    }
+
+    async Task LoadNotifications()
+    {
+        notifications = await NotificationService.GetUserNotifications(userEmail);
+        unreadCount = await NotificationService.GetUnreadCount(userEmail);
+    }
+
+    void ToggleNotifications()
+    {
+        showNotifications = !showNotifications;
+    }
+
+    async Task MarkAsRead(int id)
+    {
+        await NotificationService.MarkAsRead(id);
+        await LoadNotifications();
+    }
+}

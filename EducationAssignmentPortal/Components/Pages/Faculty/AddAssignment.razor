@@ -1,0 +1,92 @@
+﻿@page "/add-assignment"
+@layout FacultyLayout
+@rendermode InteractiveServer
+
+@using EducationAssignmentPortal.Components.Layout
+@using EducationAssignmentPortal.Models
+@using EducationAssignmentPortal.Services
+@inject AssignmentService AssignmentService
+@inject CourseService CourseService
+@inject UserService UserService
+@inject NavigationManager Navigation
+
+
+<h3>Add Assignment</h3>
+
+@if (UserService.LoggedInUser == null)
+{
+    <p>Please login first</p>
+}
+else
+{
+    <EditForm Model="@assignment" OnValidSubmit="HandleSubmit">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+       <div class="mb-2">
+    <label>Course:</label>
+    @* <select class="form-control" @bind="assignment.CourseId">
+        <option value="">-- Select Course --</option>
+        @foreach (var course in courses)
+        {
+            <option value="@course.Id">@assignment.CourseId</option>
+        }
+    </select> *@
+    <select class="form-control" @bind="assignment.CourseId">
+    <option value="">-- Select Course --</option>
+
+    @foreach (var course in courses)
+    {
+        <option value="@course.Id">@course.CourseName</option>
+    }
+</select>
+</div>
+        <div class="mb-2">
+            <label>Title:</label>
+            <InputText class="form-control" @bind-Value="assignment.Title" />
+        </div>
+
+        <div class="mb-2">
+            <label>Description:</label>
+            <InputText class="form-control" @bind-Value="assignment.Description" />
+        </div>
+
+        <div class="mb-2">
+            <label>Due Date:</label>
+            <InputDate class="form-control" @bind-Value="assignment.DueDate" />
+        </div>
+
+        <br />
+
+        <button type="submit" class="btn btn-success">Save</button>
+    </EditForm>
+}
+
+@code {
+
+    Assignment assignment = new Assignment();
+    List<Course> courses = new();
+
+    protected override void OnInitialized()
+    {
+        if (UserService.LoggedInUser != null)
+        {
+            courses = CourseService
+                .GetCoursesByFaculty(UserService.LoggedInUser.Id);
+        }
+    }
+
+   async Task HandleSubmit()
+{
+    assignment.FacultyEmail = UserService.LoggedInUser!.Email;
+    assignment.Status = "Pending";
+
+    await AssignmentService.AddAssignmentAsync(assignment);
+
+    Navigation.NavigateTo("/faculty/assignments");
+
+    Navigation.NavigateTo("/faculty-dashboard");
+
+
+}
+}

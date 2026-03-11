@@ -1,0 +1,103 @@
+﻿@* @page "/student/assignments"
+@using EducationAssignmentPortal.Components.Layout
+@layout StudentLayout
+@rendermode InteractiveServer
+<h3>Assignment_Student</h3>
+
+@code {
+
+} *@
+
+
+@page "/student/assignments"
+@layout StudentLayout
+@rendermode InteractiveServer
+
+@using EducationAssignmentPortal.Components.Layout
+@using EducationAssignmentPortal.Models
+@using EducationAssignmentPortal.Services
+@inject AssignmentService AssignmentService
+@inject UserService userService
+
+<div class="container-fluid">
+
+    <h3 class="mb-4">My Assignments</h3>
+
+    @if (assignments.Count == 0)
+    {
+        <div class="alert alert-info">
+            No assignments available.
+        </div>
+    }
+    else
+    {
+        <div class="card shadow">
+            <div class="card-body">
+
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Title</th>
+                            <th>Due Date</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        @foreach (var assignment in assignments)
+                        {
+                            <tr>
+                                <td>@assignment.Title</td>
+                                <td>@assignment.DueDate?.ToShortDateString()</td>
+
+                                <td>
+                                    @if (assignment.Status == "Completed")
+                                    {
+                                        <span class="badge bg-success">Completed</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-warning text-dark">Pending</span>
+                                    }
+                                </td>
+
+                                <td>
+                                    @if (assignment.Status != "Completed")
+                                    {
+                                        <button class="btn btn-sm btn-primary"
+                                                @onclick="() => MarkCompleted(assignment.Id)">
+                                            Mark Completed
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-success">✔ Done</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+
+            </div>
+        </div>
+    }
+
+</div>
+
+@code {
+
+    private List<Assignment> assignments = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        assignments = await AssignmentService.GetAllAssignments();
+    }
+
+    async Task  MarkCompleted(int id)
+    {
+        AssignmentService.UpdateStatusAsync(id, "Completed");
+        assignments = await AssignmentService.GetAllAssignments();
+    }
+}

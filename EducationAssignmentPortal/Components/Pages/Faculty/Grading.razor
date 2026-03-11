@@ -1,0 +1,146 @@
+﻿@page "/faculty-grading"
+@layout FacultyLayout
+@using EducationAssignmentPortal.Components.Layout
+@using EducationAssignmentPortal.Data
+@using EducationAssignmentPortal.Models
+@using EducationAssignmentPortal.Services
+@inject AppDBContext _context
+@inject UserService UserService
+@inject CourseService CourseService
+
+<h3>Student Grading</h3>
+
+@if (UserService.LoggedInUser == null ||
+    !string.Equals(UserService.LoggedInUser.Role, "Faculty", StringComparison.OrdinalIgnoreCase))
+{
+    <div class="alert alert-danger">
+        Unauthorized Access
+    </div>
+}
+else
+{
+    <EditForm Model="@grade" OnValidSubmit="HandleValidSubmit">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div class="mb-2">
+            <label>Student Email</label>
+            <InputText class="form-control" @bind-Value="grade.StudentEmail" />
+        </div>
+
+        <div class="mb-2">
+            <label>Course</label>
+            <InputSelect class="form-control" @bind-Value="grade.CourseName">
+                <option value="">-- Select Course --</option>
+
+                @foreach (var course in facultyCourses)
+                {
+                    <option value="@course.CourseName">
+                        @course.CourseName (@course.CourseCode)
+                    </option>
+                }
+            </InputSelect>
+        </div>
+
+        <div class="mb-2">
+            <label>Marks</label>
+            <InputNumber class="form-control" @bind-Value="grade.Marks" />
+        </div>
+
+        <button class="btn btn-success mt-2">Add Grade</button>
+    </EditForm>
+
+    @if (!string.IsNullOrEmpty(successMessage))
+    {
+        <div class="alert alert-success mt-3">
+            @successMessage
+        </div>
+    }
+
+    <hr />
+
+    <h4>All Grades</h4>
+
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Email</th>
+                <th>Course</th>
+                <th>Marks</th>
+                <th>Grade</th>
+                <th>Given By</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var g in grades)
+            {
+                <tr>
+                    <td>@g.StudentEmail</td>
+                    <td>@g.CourseName</td>
+                    <td>@g.Marks</td>
+                    <td>@g.Grade</td>
+                    <td>@g.FacultyEmail</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+
+    StudentGrade grade = new StudentGrade();
+    List<StudentGrade> grades = new();
+    private List<Course> facultyCourses = new();
+    string? successMessage;
+
+    protected override void OnInitialized()
+    {
+        var faculty = UserService.GetCurrentUser();
+
+        if (faculty != null)
+        {
+            facultyCourses = CourseService.GetCoursesByFaculty(faculty.Id);
+        }
+
+        LoadGrades();
+    }
+
+    void LoadGrades()
+    {
+        var facultyEmail = UserService.LoggedInUser?.Email;
+
+        grades = _context.StudentGrades
+                         .Where(g => g.FacultyEmail == facultyEmail)
+                         .ToList();
+    }
+
+  void HandleValidSubmit()
+{
+    if (grade.Marks >= 90)
+        grade.Grade = "A+";
+    else if (grade.Marks >= 75)
+        grade.Grade = "A";
+    else if (grade.Marks >= 60)
+        grade.Grade = "B";
+    else if (grade.Marks >= 40)
+        grade.Grade = "C";
+    else
+        grade.Grade = "F";
+
+    grade.FacultyEmail = UserService.LoggedInUser?.Email;
+
+    // 1️⃣ Save grade
+    _context.StudentGrades.Add(grade);
+    _context.SaveChanges();
+
+    // 2️⃣ 🔔 Add notification (ADD HERE)
+    UserService.AddNotification(
+        $"You received {grade.Grade} in {grade.CourseName}",
+        grade.StudentEmail
+    );
+
+    successMessage = "Grade added successfully!";
+    grade = new StudentGrade();
+    LoadGrades();
+}
+}

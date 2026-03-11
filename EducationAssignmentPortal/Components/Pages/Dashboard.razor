@@ -1,0 +1,206 @@
+﻿@page "/dashboard"
+@rendermode InteractiveServer
+@using EducationAssignmentPortal.Models
+@using EducationAssignmentPortal.Services
+@inject UserService UserService
+@inject AssignmentService AssignmentService
+@inject NavigationManager Navigation
+
+<h3>Dashboard</h3>
+
+@if (UserService.LoggedInUser == null)
+{
+    <p>You are not logged in.</p>
+}
+else
+{
+    <h4>Welcome @UserService.LoggedInUser.Name</h4>
+
+    <button class="btn btn-danger" @onclick="Logout">Logout</button>
+
+    <br /><br />
+
+    <NavLink href="/add-assignment" class="btn btn-primary">
+        Add Assignment
+    </NavLink>
+
+    <hr />
+
+    <h4>Your Assignments</h4>
+
+    @if (userAssignments.Count == 0)
+    {
+        <p>No assignments yet.</p>
+    }
+    else
+    {
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Description</th>
+                    <th>Due Date</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                @foreach (var a in userAssignments)
+                {
+                    <tr>
+                        <td>@a.Title</td>
+                        <td>@a.Description</td>
+                        <td>@a.DueDate?.ToShortDateString()</td>
+
+                        <td>
+                            @if (a.Status == "Pending")
+                            {
+                                <span style="color:orange">Pending</span>
+                            }
+                            else
+                            {
+                                <span style="color:green">Completed</span>
+                            }
+                        </td>
+
+                        <td>
+                            <button class="btn btn-sm btn-warning"
+                                    @onclick="() => OpenEdit(a)">
+                                Edit
+                            </button>
+
+                            <button class="btn btn-sm btn-danger"
+                                    @onclick="() => Delete(a.Id)">
+                                Delete
+                            </button>
+
+                            @if (a.Status == "Pending")
+                            {
+                                <button class="btn btn-sm btn-success"
+                                        @onclick="() => MarkCompleted(a.Id)">
+                                    Mark Completed
+                                </button>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+}
+
+<!-- EDIT POPUP -->
+@if (showEditPopup)
+{
+    <div class="modal">
+        <div class="modal-content">
+            <h5>Edit Assignment</h5>
+
+            <input class="form-control mb-2"
+                   placeholder="Title"
+                   @bind="editAssignment.Title" />
+
+            <input class="form-control mb-2"
+                   placeholder="Description"
+                   @bind="editAssignment.Description" />
+
+            <input class="form-control mb-2"
+                   type="date"
+                   @bind="editAssignment.DueDate" />
+
+            <button class="btn btn-primary" @onclick="SaveEdit">Update</button>
+            <button class="btn btn-secondary" @onclick="ClosePopup">Cancel</button>
+        </div>
+    </div>
+}
+
+@code {
+
+    private List<Assignment> userAssignments = new();
+
+    private bool showEditPopup = false;
+    private Assignment editAssignment = new();
+
+    protected override async Task OnInitializedAsync()
+{
+    if (UserService.LoggedInUser == null)
+    {
+        Navigation.NavigateTo("/login", true);
+        return;
+    }
+
+    await LoadAssignments();
+}
+  
+  async Task LoadAssignments()
+{
+    userAssignments = await AssignmentService.GetAllAssignments();
+}
+
+
+  private void Logout()
+{
+    UserService.Logout();
+    Navigation.NavigateTo("/login");
+}
+
+    void OpenEdit(Assignment a)
+    {
+        editAssignment = new Assignment
+        {
+            Id = a.Id,
+            Title = a.Title,
+            Description = a.Description,
+            DueDate = a.DueDate,
+        
+            Status = a.Status
+        };
+
+        showEditPopup = true;
+    }
+
+    // void SaveEdit()
+    // {
+    //     AssignmentService.UpdateAssignmentAsync(editAssignment);
+    //     LoadAssignments();
+    //     ClosePopup();
+    // }
+    async Task SaveEdit()
+{
+    await AssignmentService.UpdateAssignmentAsync(editAssignment);
+    await LoadAssignments();
+    ClosePopup();
+}
+
+async Task Delete(int id)
+{
+    await AssignmentService.DeleteAssignmentAsync(id);
+    await LoadAssignments();
+}
+
+    // void Delete(int id)
+    // {
+    //     AssignmentService.DeleteAssignmentAsync(id);
+    //     LoadAssignments();
+    // }
+
+    // void MarkCompleted(int id)
+    // {
+    //     AssignmentService.UpdateStatusAsync(id, "Completed");
+    //    LoadAssignments();
+    // }
+
+    async Task MarkCompleted(int id)
+{
+    await AssignmentService.UpdateStatusAsync(id, "Completed");
+    await LoadAssignments();
+}
+
+    void ClosePopup()
+    {
+        showEditPopup = false;
+    }
+}
+
+

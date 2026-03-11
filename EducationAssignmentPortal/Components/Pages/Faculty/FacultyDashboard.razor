@@ -1,0 +1,512 @@
+﻿@layout FacultyLayout
+@page "/faculty-dashboard"
+@page "/faculty"
+
+@using EducationAssignmentPortal.Components.Layout
+@using EducationAssignmentPortal.Models
+@using EducationAssignmentPortal.Services
+
+@inject UserService UserService
+@inject AssignmentService AssignmentService
+@inject NavigationManager Navigation
+
+<div class="container-fluid">
+
+    <!-- HEADER -->
+    <div class="dashboard-header mb-4">
+        <h2>Welcome, @UserService?.LoggedInUser?.Name</h2>
+        <p>Manage your assignments, courses, and grading from here.</p>
+    </div>
+
+    <!-- QUICK ACTION BUTTONS -->
+    <div class="mb-4">
+        <button class="btn btn-success me-2" @onclick="GoToAddAssignment">
+            ➕ Add Assignment
+        </button>
+
+        <button class="btn btn-primary me-2" @onclick="GoToMyCourses">
+            📘 My Courses
+        </button>
+
+        <button class="btn btn-warning" @onclick="GoToGrading">
+            📝 Go to Grading
+        </button>
+    </div>
+
+    <!-- STATS CARDS -->
+    <div class="row g-4">
+
+        <div class="col-md-3">
+            <div class="card shadow-sm p-3">
+                <h5>Total Assignments</h5>
+                <p class="fs-4 fw-bold text-primary">
+                    @totalAssignments
+                </p>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card shadow-sm p-3">
+                <h5>My Courses</h5>
+                <p class="fs-4 fw-bold text-success">
+                    @totalCourses
+                </p>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card shadow-sm p-3">
+                <h5>Pending Grading</h5>
+                <p class="fs-4 fw-bold text-danger">
+                    @pendingAssignments
+                </p>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card shadow-sm p-3">
+                <h5>Total Students</h5>
+                <p class="fs-4 fw-bold text-info">
+                    @totalStudents
+                </p>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- UPCOMING DEADLINES -->
+    <div class="card mt-5 shadow-sm">
+        <div class="card-header bg-light">
+            <h5>📅 Upcoming Deadlines</h5>
+        </div>
+
+        <div class="card-body">
+
+            @if (upcomingAssignments.Count == 0)
+            {
+                <p>No upcoming assignments.</p>
+            }
+            else
+            {
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Course</th>
+                            <th>Assignment</th>
+                            <th>Due Date</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        @foreach (var item in upcomingAssignments)
+                        {
+                            <tr>
+                                <td>@item.Course?.CourseName</td>
+                                <td>@item.Title</td>
+                                <td>
+                                    @(item.DueDate.HasValue
+                                        ? item.DueDate.Value.ToShortDateString()
+                                        : "No Date")
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+
+        </div>
+    </div>
+
+    <!-- RECENT ASSIGNMENTS -->
+    <div class="card mt-4 shadow-sm">
+        <div class="card-header bg-light">
+            <h5>📥 Recent Assignments</h5>
+        </div>
+
+        <div class="card-body">
+
+            @if (recentAssignments.Count == 0)
+            {
+                <p>No assignments found.</p>
+            }
+            else
+            {
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Course</th>
+                            <th>Assignment</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        @foreach (var item in recentAssignments)
+                        {
+                            <tr>
+                                <td>@item.Course?.CourseName</td>
+                                <td>@item.Title</td>
+                                <td>
+                                    <span class="badge @(item.Status == "Pending" ? "bg-danger" : "bg-success")">
+                                        @item.Status
+                                    </span>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+
+        </div>
+    </div>
+
+</div>
+
+@code {
+
+    private int totalAssignments;
+    private int totalCourses;
+    private int pendingAssignments;
+    private int totalStudents;
+
+    private List<Assignment> upcomingAssignments = new();
+    private List<Assignment> recentAssignments = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDashboardData();
+    }
+
+    async Task LoadDashboardData()
+    {
+        if (UserService.LoggedInUser == null)
+            return;
+
+        var email = UserService.LoggedInUser.Email;
+
+        var allAssignments = await AssignmentService.GetAllAssignments();
+
+        var assignments = allAssignments
+            .Where(a => a.FacultyEmail == email)
+            .ToList();
+
+        totalAssignments = assignments.Count;
+
+        pendingAssignments = assignments
+            .Count(a => a.Status == "Pending");
+
+        totalCourses = assignments
+            .Select(a => a.CourseId)
+            .Distinct()
+            .Count();
+
+        totalStudents = 120; // temporary demo value
+
+        upcomingAssignments = assignments
+            .Where(a => a.DueDate.HasValue && a.DueDate.Value >= DateTime.Now)
+            .OrderBy(a => a.DueDate)
+            .Take(5)
+            .ToList();
+
+        recentAssignments = assignments
+            .OrderByDescending(a => a.DueDate)
+            .Take(5)
+            .ToList();
+    }
+
+    void GoToAddAssignment()
+    {
+        Navigation.NavigateTo("/add-assignment");
+    }
+
+    void GoToMyCourses()
+    {
+        Navigation.NavigateTo("/faculty/mycourses");
+    }
+
+    void GoToGrading()
+    {
+        Navigation.NavigateTo("/faculty-grading");
+    }
+}
+@* @layout FacultyLayout
+@page "/faculty-dashboard"
+@page "/faculty"
+
+@using EducationAssignmentPortal.Components.Layout
+@using EducationAssignmentPortal.Models
+@using EducationAssignmentPortal.Services
+
+@inject UserService UserService
+@inject AssignmentService AssignmentService
+@inject NavigationManager Navigation
+
+<div class="container-fluid">
+
+    <!-- HEADER -->
+    <div class="dashboard-header mb-4">
+        <h2>Welcome, @UserService?.LoggedInUser?.Name</h2>
+        <p>Manage your assignments, courses, and grading from here.</p>
+    </div>
+
+    <!-- QUICK ACTION BUTTONS -->
+    <div class="mb-4">
+        <button class="btn btn-success me-2" @onclick="GoToAddAssignment">
+            ➕ Add Assignment
+        </button>
+
+        <button class="btn btn-primary me-2" @onclick="GoToMyCourses">
+            📘 My Courses
+        </button>
+
+        <button class="btn btn-warning" @onclick="GoToGrading">
+            📝 Go to Grading
+        </button>
+    </div>
+
+    <!-- STATS CARDS -->
+    <div class="row g-4">
+
+        <div class="col-md-3">
+            <div class="card shadow-sm p-3">
+                <h5>Total Assignments</h5>
+                <p class="fs-4 fw-bold text-primary">
+                    @totalAssignments
+                </p>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card shadow-sm p-3">
+                <h5>My Courses</h5>
+                <p class="fs-4 fw-bold text-success">
+                    @totalCourses
+                </p>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card shadow-sm p-3">
+                <h5>Pending Grading</h5>
+                <p class="fs-4 fw-bold text-danger">
+                    @pendingAssignments
+                </p>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card shadow-sm p-3">
+                <h5>Total Students</h5>
+                <p class="fs-4 fw-bold text-info">
+                    @totalStudents
+                </p>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- UPCOMING DEADLINES -->
+    <div class="card mt-5 shadow-sm">
+        <div class="card-header bg-light">
+            <h5>📅 Upcoming Deadlines</h5>
+        </div>
+        <div class="card-body">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Course</th>
+                        <th>Assignment</th>
+                        <th>Due Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+    @foreach (var item in upcomingAssignments)
+    {
+        <tr>
+            <td>@item.Course?.Id</td>
+            <td>@item.Title</td>
+            <td>
+                @(item.DueDate.HasValue 
+                    ? item.DueDate.Value.ToShortDateString() 
+                    : "No Date")
+            </td>
+        </tr>
+    }
+</tbody>
+               
+            </table>
+        </div>
+    </div>
+
+    <!-- RECENT SUBMISSIONS -->
+    <div class="card mt-4 shadow-sm">
+        <div class="card-header bg-light">
+            <h5>📥 Recent Assignments</h5>
+        </div>
+        <div class="card-body">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Course</th>
+                        <th>Assignment</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+              <tbody>
+    @foreach (var item in recentAssignments)
+    {
+        <tr>
+            <td>@item.Course?.Id</td>
+            <td>@item.Title</td>
+            <td>
+                <span class="badge @(item.Status == "Pending" ? "bg-danger" : "bg-success")">
+                    @item.Status
+                </span>
+            </td>
+        </tr>
+    }
+</tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+@code {
+
+    private int totalAssignments;
+    private int totalCourses;
+    private int pendingAssignments;
+    private int totalStudents;
+
+    private List<Assignment> upcomingAssignments = new();
+    private List<Assignment> recentAssignments = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDashboardData();
+    }
+
+    async Task LoadDashboardData()
+    {
+        var email = UserService.LoggedInUser?.Email;
+
+        if (!string.IsNullOrEmpty(email))
+        {
+            var allAssignments = await AssignmentService.GetAllAssignments();
+
+            var assignments = allAssignments
+                .Where(a => a.FacultyEmail == email)
+                .ToList();
+
+            totalAssignments = assignments.Count;
+
+            pendingAssignments = assignments
+                .Count(a => a.Status == "Pending");
+
+            totalCourses = assignments
+                .Select(a => a.CourseId)
+                .Distinct()
+                .Count();
+
+            totalStudents = 120; // temporary
+
+            upcomingAssignments = assignments
+                .Where(a => a.DueDate.HasValue && a.DueDate.Value >= DateTime.Now)
+                .OrderBy(a => a.DueDate)
+                .Take(5)
+                .ToList();
+
+            recentAssignments = assignments
+                .OrderByDescending(a => a.DueDate)
+                .Take(5)
+                .ToList();
+        }
+
+        StateHasChanged();
+    }
+    void GoToAddAssignment()
+{
+    Navigation.NavigateTo("/faculty/addassignment");
+}
+
+void GoToMyCourses()
+{
+    Navigation.NavigateTo("/faculty/mycourses");
+}
+
+void GoToGrading()
+{
+    Navigation.NavigateTo("/faculty-grading");
+}
+} *@
+
+@* @code {
+
+    private int totalAssignments;
+    private int totalCourses;
+    private int pendingAssignments;
+    private int totalStudents;
+
+    private List<Assignment> upcomingAssignments = new();
+    private List<Assignment> recentAssignments = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        LoadDashboardData();
+    }
+
+   async Task LoadDashboardData()
+{
+    var email = UserService.LoggedInUser?.Email;
+
+    if (!string.IsNullOrEmpty(email))
+    {
+        // var assignments = AssignmentService
+        //     .GetAllAssignments()
+        //     .Where(a => a.FacultyEmail == email)
+        //     .ToList();
+        var allAssignments = await  AssignmentService.GetAllAssignments();
+
+var assignments = allAssignments
+    .Where(a => a.FacultyEmail == email)
+    .ToList();
+
+        totalAssignments = assignments.Count;
+
+        pendingAssignments = assignments
+            .Count(a => a.Status == "Pending");
+
+        totalCourses = assignments
+            .Select(a => a.CourseId)
+            .Distinct()
+            .Count();
+
+        totalStudents = 120; // temporary
+
+        upcomingAssignments = assignments
+            .Where(a => a.DueDate.HasValue && a.DueDate.Value >= DateTime.Now)
+            .OrderBy(a => a.DueDate)
+            .Take(5)
+            .ToList();
+
+        recentAssignments = assignments
+            .OrderByDescending(a => a.DueDate)
+            .Take(5)
+            .ToList();
+    }
+}
+    void GoToAddAssignment()
+    {
+        Navigation.NavigateTo("/faculty/addassignment");
+    }
+
+    void GoToMyCourses()
+    {
+        Navigation.NavigateTo("/faculty/mycourses");
+    }
+
+    void GoToGrading()
+    {
+        Navigation.NavigateTo("/faculty-grading");
+    }
+} *@

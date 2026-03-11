@@ -1,0 +1,345 @@
+﻿@page "/admin-dashboard"
+@page "/admin"
+@layout AdminLayout
+
+@using EducationAssignmentPortal.Components.Layout
+@using EducationAssignmentPortal.Services
+@using EducationAssignmentPortal.Models
+@inject UserService UserService
+@inject NavigationManager Navigation
+
+<h3>Admin Panel</h3>
+
+@if (UserService.LoggedInUser == null)
+{
+    <div class="alert alert-danger">
+        You are not logged in!
+    </div>
+}
+else if (UserService.LoggedInUser.Role != "Admin")
+{
+    <div class="alert alert-warning">
+        Access Denied! Admins only.
+    </div>
+}
+else
+{
+    <p><strong>Welcome:</strong> @UserService.LoggedInUser.Name</p>
+    <p><strong>Your Role:</strong> @UserService.LoggedInUser.Role</p>
+
+    <hr />
+
+    <!-- Total Users and Pending Faculty -->
+    <div class="row mt-4">
+        <div class="col-md-4">
+            <div class="card shadow p-3">
+                <h5>Total Users</h5>
+                <h3>@totalUsers</h3>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow p-3">
+                <h5>Pending Faculty Approvals</h5>
+                <h3>@pendingFaculty</h3>
+            </div>
+        </div>
+    </div>
+
+    <hr />
+
+    <!-- Manage Users Section -->
+    <h5 class="mt-4">Manage Users</h5>
+
+    <table class="table table-bordered mt-2">
+        <thead class="table-dark">
+            <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+           @foreach (var user in users)
+           {
+                <tr>
+                    <td>@user.Name</td>
+                    <td>@user.Email</td>
+                    <td>@user.Role</td>
+                    <td>
+                        @(user.IsApproved ? "Approved" : "Pending")
+                    </td>
+                    <td>
+                        @if (user.Role == "Faculty" && user.IsApproved == false)
+                        {
+                            <button class="btn btn-success btn-sm" @onclick="() => ApproveFaculty(user.Id)">
+                                Approve
+                            </button>
+                        }
+
+                        <button class="btn btn-danger btn-sm ms-2" @onclick="() => DeleteUser(user.Id)">
+                            Delete
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <!-- Logout Button -->
+    <button class="btn btn-danger mt-3" @onclick="Logout">
+        Logout
+    </button>
+}
+@code {
+    private List<User> users = new();
+    private int totalUsers;
+    private int pendingFaculty;
+
+    // When the page is initialized, check if the user is logged in and has admin role
+    // protected override void OnInitialized()
+    // {
+    //     if (UserService.LoggedInUser == null)
+    //     {
+    //         Navigation.NavigateTo("/login");
+    //         return;
+    //     }
+
+    //     if (UserService.LoggedInUser.Role != "Admin")
+    //     {
+    //         Navigation.NavigateTo("/login");
+    //         return;
+    //     }
+//     protected override void OnInitialized()
+// {
+//     var user = UserService.GetCurrentUser();
+
+//     if (user == null || user.Role != "Admin")
+//     {
+//         Navigation.NavigateTo("/login");
+//         return;
+//     }
+
+//     LoadData();
+// }
+protected override async Task OnInitializedAsync()
+{
+    var user = UserService.GetCurrentUser();
+
+    if (user == null || user.Role != "Admin")
+    {
+        Navigation.NavigateTo("/login");
+        return;
+    }
+
+    await LoadData();
+}
+
+    // Loads data (users, total users, and pending faculty)
+    private async Task LoadData()
+{
+    users = await UserService.GetAllUsers();
+
+    totalUsers = users.Count;
+
+    pendingFaculty = users
+        .Count(u => u.Role == "Faculty" && u.IsApproved == false);
+}
+    // private void LoadData()
+    // {
+    //     users = UserService.GetAllUsers();
+    //     totalUsers = users.Count;
+    //     pendingFaculty = users
+    //         .Count(u => u.Role == "Faculty" && u.IsApproved == false);
+    // }
+
+    // Approve a faculty member
+    // private void ApproveFaculty(int id)
+    // {
+    //     UserService.ApproveFaculty(id);
+    //     LoadData();
+    // }
+
+    // Delete a user
+    // private void DeleteUser(int id)
+    // {
+    //     UserService.DeleteUser(id);
+    //     LoadData();
+    // }
+    private async Task ApproveFaculty(int id)
+{
+    await UserService.ApproveFaculty(id);
+    await LoadData();
+}
+
+private async Task DeleteUser(int id)
+{
+    await UserService.DeleteUser(id);
+    await LoadData();
+}
+
+    // Logout the current user
+  private void Logout()
+{
+    UserService.Logout();
+    Navigation.NavigateTo("/login?logout=true");
+}
+}
+
+@* @page "/admin-dashboard"
+@page "/admin"
+@layout AdminLayout
+
+
+@using EducationAssignmentPortal.Components.Layout
+@using EducationAssignmentPortal.Services
+@using EducationAssignmentPortal.Models
+@inject UserService UserService
+@inject NavigationManager Navigation
+
+<h3>Admin Panel </h3>
+
+@if (UserService.LoggedInUser == null)
+{
+    <div class="alert alert-danger">
+        You are not logged in!
+    </div>
+}
+else if (UserService.LoggedInUser.Role != "Admin")
+{
+    <div class="alert alert-warning">
+        Access Denied! Admins only.
+    </div>
+}
+else
+{
+    <p><strong>Welcome:</strong> @UserService.LoggedInUser.Name</p>
+    <p><strong>Your Role:</strong> @UserService.LoggedInUser.Role</p>
+
+    <hr />
+
+    <div class="row mt-4">
+
+        <div class="col-md-4">
+            <div class="card shadow p-3">
+                <h5>Total Users</h5>
+                <h3>@totalUsers</h3>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow p-3">
+                <h5>Pending Faculty Approvals</h5>
+                <h3>@pendingFaculty</h3>
+            </div>
+        </div>
+
+    </div>
+
+    <hr />
+
+    <h5 class="mt-4">Manage Users</h5>
+
+    <table class="table table-bordered mt-2">
+        <thead class="table-dark">
+            <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+           @foreach (var user in users)
+{
+    <tr>
+        <td>@user.Name</td>
+        <td>@user.Email</td>
+        <td>@user.Role</td>
+        <td>
+            @(user.IsApproved ? "Approved" : "Pending")
+        </td>
+        <td>
+            @if (user.Role == "Faculty" && user.IsApproved == false)
+            {
+                <button class="btn btn-success btn-sm"
+                        @onclick="() => ApproveFaculty(user.Id)">
+                    Approve
+                </button>
+            }
+
+            <button class="btn btn-danger btn-sm ms-2"
+                    @onclick="() => DeleteUser(user.Id)">
+                Delete
+            </button>
+        </td>
+    </tr>
+}
+        </tbody>
+    </table>
+
+    <button class="btn btn-danger mt-3"
+			@onclick="Logout">
+        Logout
+    </button>
+}
+@code {
+    private List<User> users = new();
+private int totalUsers;
+private int pendingFaculty;
+
+protected override void OnInitialized()
+{
+    if (UserService.LoggedInUser == null)
+    {
+        Navigation.NavigateTo("/login");
+        return;
+    }
+
+    if (UserService.LoggedInUser.Role != "Admin")
+    {
+        Navigation.NavigateTo("/login");
+        return;
+    }
+
+    LoadData();
+}
+
+private void LoadData()
+{
+    users = UserService.GetAllUsers();
+    totalUsers = users.Count;
+    pendingFaculty = users
+        .Count(u => u.Role == "Faculty" && u.IsApproved == false);
+}
+
+private void ApproveFaculty(int id)
+{
+    UserService.ApproveFaculty(id);
+    LoadData();
+}
+
+private void DeleteUser(int id)
+{
+    UserService.DeleteUser(id);
+    LoadData();
+}
+
+    // protected override void OnInitialized()
+    // {
+    //     if (UserService.LoggedInUser == null)
+    //     {
+    //         Navigation.NavigateTo("/login");
+    //     }
+    // }
+
+    private void Logout()
+    {
+        UserService.LoggedInUser = null;
+        Navigation.NavigateTo("/login?logout=true");
+    }
+}
+ *@

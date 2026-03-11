@@ -1,0 +1,147 @@
+﻿@using EducationAssignmentPortal.Services
+@using Microsoft.AspNetCore.Components.Authorization
+
+@inject UserService UserService
+@inject NavigationManager Navigation
+@inject NotificationService NotificationService
+@inject AuthenticationStateProvider AuthStateProvider
+
+
+<div class="top-row ps-3 navbar navbar-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="/">EducationAssignmentPortal</a>
+        <NotificationBell />
+    </div>
+</div>
+
+<div class="nav-scrollable">
+    <nav class="flex-column">
+
+        @if (UserService.LoggedInUser != null)
+        {
+            <div class="nav-item px-3">
+                <span class="nav-link">
+                    👤 @UserService.LoggedInUser.Name
+                </span>
+            </div>
+
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="/student-dashboard">
+                    Dashboard
+                </NavLink>
+            </div>
+
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="/assignments">
+                    Assignments
+                </NavLink>
+            </div>
+
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="/courses">
+                    My Courses
+                </NavLink>
+            </div>
+
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="/grades">
+                    Grades
+                </NavLink>
+            </div>
+
+            <div class="nav-item px-3">
+                <span class="nav-link" style="cursor:pointer;" @onclick="Logout">
+                    Logout
+                </span>
+            </div>
+        }
+        else
+        {
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="/login">
+                    Login
+                </NavLink>
+            </div>
+
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="/register">
+                    Register
+                </NavLink>
+            </div>
+        }
+
+    </nav>
+</div>
+
+@code {
+    void Logout()
+    {
+       UserService.Logout();
+        Navigation.NavigateTo("/");
+    }
+}
+
+
+
+
+@* @using EducationAssignmentPortal.Services
+@inject UserService UserService
+@inject NavigationManager Navigation
+
+<div class="top-row ps-3 navbar navbar-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="/">EducationAssignmentPortal</a>
+    </div>
+</div>
+
+<div class="nav-scrollable">
+    <nav class="flex-column">
+
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="/" Match="NavLinkMatch.All">
+                Home
+            </NavLink>
+        </div>
+
+        @if (UserService.LoggedInUser != null)
+        {
+            <div class="nav-item px-3">
+                <span class="nav-link">
+                    Welcome, @UserService.LoggedInUser.Name
+                </span>
+            </div>
+
+            <div class="nav-item px-3">
+                <button class="nav-link btn btn-link" @onclick="Logout">
+                    Logout
+                </button>
+            </div>
+        }
+        else
+        {
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="/login">
+                    Login
+                </NavLink>
+            </div>
+
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="/register">
+                    Register
+                </NavLink>
+            </div>
+        }
+
+    </nav>
+
+    @code {
+    void Logout()
+    {
+        UserService.LoggedInUser = null;
+
+        // Navigate back to home or login
+        Navigation.NavigateTo("/");
+    }
+}
+</div>
+ *@

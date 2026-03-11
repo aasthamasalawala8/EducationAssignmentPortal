@@ -1,0 +1,41 @@
+﻿@page "/faculty-assignment"
+@layout FacultyLayout
+@using EducationAssignmentPortal.Components.Layout
+@using EducationAssignmentPortal.Models
+@using EducationAssignmentPortal.Services
+@inject AssignmentService AssignmentService
+@inject NavigationManager Navigation
+
+
+<h3>My Assignments</h3>
+
+<button class="btn btn-primary mb-3"
+        @onclick='() => Navigation.NavigateTo("/add-assignment")'>
+    + Add Assignment
+</button>
+
+
+@if(assignments == null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    @foreach(var item in assignments)
+    {
+        <div class="card mb-2 p-2">
+            <b>@item.Title</b><br />
+            @item.Description <br />
+            Due: @item.DueDate?.ToShortDateString()
+        </div>
+    }
+}
+
+@code {
+    List<Assignment> assignments = new();
+
+  protected override async Task OnInitializedAsync()
+    {
+        assignments = await AssignmentService.GetAllAssignments();
+    }
+}

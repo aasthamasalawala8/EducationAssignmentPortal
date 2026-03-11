@@ -1,0 +1,56 @@
+﻿@page "/student/grades"
+@layout StudentLayout
+@using EducationAssignmentPortal.Components.Layout
+@using EducationAssignmentPortal.Models
+@using EducationAssignmentPortal.Data
+@using EducationAssignmentPortal.Services
+@inject AppDBContext _context
+@inject UserService UserService
+
+<h3>My Grades</h3>
+
+@if (grades == null || grades.Count == 0)
+{
+    <p>No grades available.</p>
+}
+else
+{
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Course Name</th>
+                <th>Marks</th>
+                <th>Grade</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var grade in grades)
+            {
+                <tr>
+                    <td>@grade.CourseName</td>
+                    <td>@grade.Marks</td>
+                    <td>@grade.Grade</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+@code {
+    private List<StudentGrade> grades = new();
+
+    protected override void OnInitialized()
+    {
+        var email = UserService.LoggedInUser?.Email;
+
+        if (!string.IsNullOrEmpty(email))
+        {
+            grades = _context.StudentGrades
+                        .Where(g => g.StudentEmail == email)
+                        .ToList();
+        }
+        else
+        {
+            grades = new List<StudentGrade>();
+        }
+    }
+}

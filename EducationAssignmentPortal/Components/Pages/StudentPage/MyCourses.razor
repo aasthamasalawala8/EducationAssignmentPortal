@@ -1,0 +1,45 @@
+﻿@page "/student/mycourses"
+@layout StudentLayout
+@using EducationAssignmentPortal.Components.Layout
+@using EducationAssignmentPortal.Models
+@using EducationAssignmentPortal.Data
+@inject AppDBContext _context
+
+<h3 class="mb-4">My Courses</h3>
+
+@if (courses == null)
+{
+    <p>Loading...</p>
+}
+else if (!courses.Any())
+{
+    <div class="alert alert-warning">
+        No courses available.
+    </div>
+}
+else
+{
+    <div class="row">
+        @foreach (var course in courses)
+        {
+            <div class="col-md-4 mb-4">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <h5>@course.CourseName</h5>
+                        <p><strong>Code:</strong> @course.CourseCode</p>
+                        <p>@course.FacultyId</p>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private List<Course>? courses;
+
+    protected override void OnInitialized()
+    {
+        courses = _context.Courses.ToList();
+    }
+}
